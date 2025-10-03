@@ -97,6 +97,13 @@ console.log("Sum of expenses: " + sum_expenses(expenses));
 console.log("---------------------------------------------");
 
 
+function Contains_Substring(str, sub) {
+  return str.includes(sub);
+}
+
+console.log(Contains_Substring("JavaScript", "Java"));
+
+
 
 // 10-Problem arr element sum
 console.log("---------------------------------------------");
