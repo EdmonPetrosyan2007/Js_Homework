@@ -1,14 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8">
+  <title>Arduino Bluetooth Controller</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+      background: #f4f4f4;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      margin: 10px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
 </head>
 <body>
-    <button onclick="send()" id="cklick">Send</button>
-    <script>
-         
-    </script>
+  <h1>🔵 Arduino Bluetooth Controller</h1>
+  <button id="connect">Connect Bluetooth</button>
+  <button id="on">Turn ON LED</button>
+  <button id="off">Turn OFF LED</button>
+
+  <script>
+    let bluetoothDevice;
+    let txCharacteristic;
+
+    document.getElementById("connect").addEventListener("click", async () => {
+      try {
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: 'Arduino' }],
+          optionalServices: ['6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+        });
+        const server = await bluetoothDevice.gatt.connect();
+        const service = await server.getPrimaryService('6e400001-b5a3-f393-e0a9-e50e24dcca9e');
+        txCharacteristic = await service.getCharacteristic('6e400002-b5a3-f393-e0a9-e50e24dcca9e');
+        alert("✅ Connected to Arduino!");
+      } catch (error) {
+        alert("❌ Connection failed: " + error);
+      }
+    });
+
+    document.getElementById("on").addEventListener("click", () => sendData("1"));
+    document.getElementById("off").addEventListener("click", () => sendData("0"));
+
+    async function sendData(data) {
+      if (!txCharacteristic) {
+        alert("⚠️ Please connect first!");
+        return;
+      }
+      const encoder = new TextEncoder();
+      await txCharacteristic.writeValue(encoder.encode(data));
+      console.log("Sent:", data);
+    }
+  </script>
 </body>
 </html>
+
+
+<!-- #include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
+
+BLECharacteristic *pCharacteristic;
+bool deviceConnected = false;
+
+#define LED_PIN 2 // change if needed
+
+#define SERVICE_UUID           "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+#define CHARACTERISTIC_UUID_RX "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+
+class MyCallbacks: public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic *pCharacteristic) {
+    std::string value = pCharacteristic->getValue();
+    if (value.length() > 0) {
+      if (value == "1") digitalWrite(LED_PIN, HIGH);
+      if (value == "0") digitalWrite(LED_PIN, LOW);
+    }
+  }
+};
+
+void setup() {
+  pinMode(LED_PIN, OUTPUT);
+  BLEDevice::init("ArduinoBLE");
+  BLEServer *pServer = BLEDevice::createServer();
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  pCharacteristic = pService->createCharacteristic(
+    CHARACTERISTIC_UUID_RX,
+    BLECharacteristic::PROPERTY_WRITE
+  );
+
+  pCharacteristic->setCallbacks(new MyCallbacks());
+  pService->start();
+  pServer->getAdvertising()->start();
+  Serial.begin(115200);
+  Serial.println("Waiting for Bluetooth connection...");
+}
+
+void loop() {
+  delay(1000);
+}
+ --> 
